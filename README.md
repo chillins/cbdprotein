@@ -14,7 +14,7 @@ upstream との差分:
 
 ## 環境変数
 
-`cbdprotein` 本体（`cli/pprotein`）が読むもの。
+`cbdprotein` 本体（`cli/cbdprotein`）が読むもの。
 
 | 変数 | 必須 | 既定 | 用途 |
 |---|---|---|---|
@@ -25,7 +25,7 @@ upstream との差分:
 **webhook URL はリポジトリにコミットしない。** `isucon-kit-v2` の GitHub Secrets から CD が
 `cbdprotein.env` を生成し、`/etc/cbdprotein.env` に rsync して systemd の `EnvironmentFile` で読ませる。
 
-`cbdprotein-agent`（`cli/pprotein-agent`）は upstream のまま `PORT` / `PPROTEIN_HTTPLOG` /
+`cbdprotein-agent`（`cli/cbdprotein-agent`）は upstream のまま `PORT` / `PPROTEIN_HTTPLOG` /
 `PPROTEIN_SLOWLOG` / `PPROTEIN_GIT_REPOSITORY` を読む。
 
 ## 通知の挙動
