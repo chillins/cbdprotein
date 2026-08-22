@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/kaz/pprotein/internal/storage"
+	"github.com/chillins/cbdprotein/internal/storage"
 	"github.com/labstack/echo/v4"
 )
 

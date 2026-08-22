@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/google/pprof/driver"
-	"github.com/kaz/pprotein/internal/collect"
+	"github.com/chillins/cbdprotein/internal/collect"
 	"github.com/labstack/echo/v4"
 )
 

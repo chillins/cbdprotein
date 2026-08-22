@@ -1,7 +1,7 @@
 package echov4
 
 import (
-	"github.com/kaz/pprotein/integration"
+	"github.com/chillins/cbdprotein/integration"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"

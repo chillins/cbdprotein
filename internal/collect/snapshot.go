@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
-	"github.com/kaz/pprotein/internal/git"
-	"github.com/kaz/pprotein/internal/storage"
+	"github.com/chillins/cbdprotein/internal/git"
+	"github.com/chillins/cbdprotein/internal/storage"
 )
 
 type (

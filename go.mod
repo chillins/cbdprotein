@@ -1,4 +1,4 @@
-module github.com/kaz/pprotein
+module github.com/chillins/cbdprotein
 
 go 1.23.3
 
