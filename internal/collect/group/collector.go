@@ -10,6 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-json"
 	"github.com/kaz/pprotein/internal/collect"
+	"github.com/kaz/pprotein/internal/notify"
 	"github.com/kaz/pprotein/internal/persistent"
 	"github.com/kaz/pprotein/internal/storage"
 	"github.com/labstack/echo/v4"
@@ -23,6 +24,7 @@ type (
 		store     storage.Storage
 		validator *validator.Validate
 		targets   *persistent.Handler
+		notifier  *notify.Slack
 	}
 
 	CollectTarget struct {
@@ -43,11 +45,12 @@ type (
 //go:embed targets.json
 var defaultTargets []byte
 
-func NewCollector(store storage.Storage, port string) (*Collector, error) {
+func NewCollector(store storage.Storage, port string, notifier *notify.Slack) (*Collector, error) {
 	c := &Collector{
 		port:      port,
 		store:     store,
 		validator: validator.New(),
+		notifier:  notifier,
 	}
 
 	targets, err := persistent.New(store, "targets.json", defaultTargets, c.sanitize)
@@ -95,15 +98,26 @@ func (cl *Collector) collectAll(c echo.Context) error {
 	}
 
 	grpId := time.Now().Format("2006-01-02_15-04-05.999999")
-	eg := &errgroup.Group{}
+	cl.notifier.Expect(grpId, notifyTargets(targets))
 
-	ch := make(chan error, len(targets))
-	defer close(ch)
+	eg := &errgroup.Group{}
 
 	for _, target := range targets {
 		target := *target
 		eg.Go(func() error {
-			return cl.makeInternalRequest(grpId, target)
+			err := cl.makeInternalRequest(grpId, target)
+			if err != nil {
+				// The collector never sees this target, so report on its behalf
+				// instead of leaving the group summary waiting for a timeout.
+				cl.notifier.Report(notify.Result{
+					Type:    target.Type,
+					Label:   target.Label,
+					GroupId: grpId,
+					Status:  notify.StatusFail,
+					Message: err.Error(),
+				})
+			}
+			return err
 		})
 	}
 
@@ -112,6 +126,14 @@ func (cl *Collector) collectAll(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusOK)
 }
+func notifyTargets(targets []*CollectTarget) []notify.Target {
+	res := make([]notify.Target, 0, len(targets))
+	for _, target := range targets {
+		res = append(res, notify.Target{Type: target.Type, Label: target.Label})
+	}
+	return res
+}
+
 func (cl *Collector) makeInternalRequest(grpId string, target CollectTarget) error {
 	body, err := json.Marshal(&collect.SnapshotTarget{
 		GroupId:  grpId,

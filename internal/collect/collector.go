@@ -18,6 +18,10 @@ type (
 
 		Store    storage.Storage
 		EventHub *event.Hub
+
+		// Hook is called once per collection that reaches a terminal status.
+		// Snapshots reprocessed at startup do not trigger it.
+		Hook func(*Entry)
 	}
 
 	Collector struct {
@@ -27,6 +31,7 @@ type (
 		store     storage.Storage
 		eventHub  *event.Hub
 		processor Processor
+		hook      func(*Entry)
 
 		mu   *sync.RWMutex
 		data map[string]*Entry
@@ -54,6 +59,7 @@ func New(processor Processor, opts *Options) (*Collector, error) {
 		store:     opts.Store,
 		eventHub:  opts.EventHub,
 		processor: newCachedProcessor(processor, opts.Store),
+		hook:      opts.Hook,
 
 		mu:   &sync.RWMutex{},
 		data: map[string]*Entry{},
@@ -70,13 +76,13 @@ func New(processor Processor, opts *Options) (*Collector, error) {
 			log.Printf("[!] unmarshalling snapshot failed: %v", err)
 			continue
 		}
-		go c.runProcessor(snapshot)
+		go c.runProcessor(snapshot, false)
 	}
 
 	return c, nil
 }
 
-func (c *Collector) updateStatus(snapshot *Snapshot, status Status, msg string) {
+func (c *Collector) updateStatus(snapshot *Snapshot, status Status, msg string) *Entry {
 	entry := &Entry{
 		Snapshot: snapshot,
 		Status:   status,
@@ -96,22 +102,34 @@ func (c *Collector) updateStatus(snapshot *Snapshot, status Status, msg string) 
 	if eventData != nil {
 		c.eventHub.Publish(eventData)
 	}
+
+	return entry
 }
 
-func (c *Collector) runProcessor(snapshot *Snapshot) error {
+// finalize records a terminal status. When notify is set, the completion hook
+// fires exactly once for this collection.
+func (c *Collector) finalize(snapshot *Snapshot, status Status, msg string, notify bool) {
+	entry := c.updateStatus(snapshot, status, msg)
+
+	if notify && c.hook != nil {
+		c.hook(entry)
+	}
+}
+
+func (c *Collector) runProcessor(snapshot *Snapshot, notify bool) error {
 	c.updateStatus(snapshot, StatusPending, "Processing")
 
 	r, err := c.processor.Process(snapshot)
 	if err != nil {
 		go snapshot.Prune()
-		c.updateStatus(snapshot, StatusFail, err.Error())
+		c.finalize(snapshot, StatusFail, err.Error(), notify)
 		return fmt.Errorf("processor aborted: %w", err)
 	}
 	if r != nil {
 		r.Close()
 	}
 
-	c.updateStatus(snapshot, StatusOk, "Ready")
+	c.finalize(snapshot, StatusOk, "Ready", notify)
 	return nil
 }
 
@@ -147,12 +165,11 @@ func (c *Collector) Collect(target *SnapshotTarget) error {
 	c.updateStatus(snapshot, StatusPending, "Collecting")
 
 	if err := snapshot.Collect(); err != nil {
-		c.updateStatus(snapshot, StatusFail, err.Error())
+		c.finalize(snapshot, StatusFail, err.Error(), true)
 		return fmt.Errorf("failed to collect: %w", err)
 	}
 
-	if err := c.runProcessor(snapshot); err != nil {
-		c.updateStatus(snapshot, StatusFail, err.Error())
+	if err := c.runProcessor(snapshot, true); err != nil {
 		return fmt.Errorf("failed to process: %w", err)
 	}
 	return nil
@@ -163,12 +180,11 @@ func (c *Collector) Add(target *SnapshotTarget, content []byte) (*Snapshot, erro
 	c.updateStatus(snapshot, StatusPending, "Collecting")
 
 	if err := snapshot.Add(content); err != nil {
-		c.updateStatus(snapshot, StatusFail, err.Error())
+		c.finalize(snapshot, StatusFail, err.Error(), true)
 		return nil, fmt.Errorf("failed to collect: %w", err)
 	}
 
-	if err := c.runProcessor(snapshot); err != nil {
-		c.updateStatus(snapshot, StatusFail, err.Error())
+	if err := c.runProcessor(snapshot, true); err != nil {
 		return nil, fmt.Errorf("failed to process: %w", err)
 	}
 	return snapshot, nil
