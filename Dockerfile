@@ -29,7 +29,7 @@ FROM alpine
 RUN apk add --no-cache graphviz
 
 COPY --from=pprotein /go/src/app/cbdprotein /usr/local/bin/
-COPY --from=pprotein /go/src/app/pprotein-agent /usr/local/bin/
+COPY --from=pprotein /go/src/app/cbdprotein-agent /usr/local/bin/
 COPY --from=alp /go/bin/alp /usr/local/bin/
 COPY --from=slp /go/bin/slp /usr/local/bin/
 

@@ -47,7 +47,7 @@ jobs:
       - name: Test
         run: go test ./...
 
-      # dist/linux_amd64/{cbdprotein,pprotein-agent} が出る
+      # dist/linux_amd64/{cbdprotein,cbdprotein-agent} が出る
       - name: Build for linux/amd64
         run: make build-linux
 
@@ -71,7 +71,7 @@ jobs:
           mkdir -p bin
           install -m 0755 \
             ../dist/linux_amd64/cbdprotein \
-            ../dist/linux_amd64/pprotein-agent \
+            ../dist/linux_amd64/cbdprotein-agent \
             bin/
 
           # バイナリに差分が無ければ（ドキュメントのみのマージなど）ここで終了

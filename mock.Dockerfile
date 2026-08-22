@@ -5,7 +5,7 @@ FROM golang:alpine AS agent
 WORKDIR $GOPATH/src/app
 COPY . .
 
-RUN go build ./cli/pprotein-agent
+RUN go build -o cbdprotein-agent ./cli/pprotein-agent
 
 # --------------------------------------------------
 
@@ -31,7 +31,7 @@ RUN apk add --no-cache mysql mysql-client nginx supervisor
 RUN mysql_install_db --datadir=/var/lib/mysql --basedir=/usr --user=root
 RUN mkdir /var/log/mysql
 
-COPY --from=agent /go/src/app/pprotein-agent /usr/local/bin/
+COPY --from=agent /go/src/app/cbdprotein-agent /usr/local/bin/
 COPY --from=mock /go/src/app/pprotein-mock /usr/local/bin/
 COPY --from=repo /opt/pprotein /opt/pprotein
 
