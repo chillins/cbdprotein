@@ -28,7 +28,7 @@ FROM alpine
 
 RUN apk add --no-cache graphviz
 
-COPY --from=pprotein /go/src/app/pprotein /usr/local/bin/
+COPY --from=pprotein /go/src/app/cbdprotein /usr/local/bin/
 COPY --from=pprotein /go/src/app/pprotein-agent /usr/local/bin/
 COPY --from=alp /go/bin/alp /usr/local/bin/
 COPY --from=slp /go/bin/slp /usr/local/bin/
@@ -36,4 +36,4 @@ COPY --from=slp /go/bin/slp /usr/local/bin/
 RUN mkdir -p /opt/pprotein
 WORKDIR /opt/pprotein
 
-ENTRYPOINT ["pprotein"]
+ENTRYPOINT ["cbdprotein"]

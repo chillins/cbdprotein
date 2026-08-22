@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: mock.Dockerfile
-  pprotein:
+  cbdprotein:
     build:
       context: .
       dockerfile: Dockerfile
