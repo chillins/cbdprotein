@@ -5,7 +5,7 @@ FROM golang:alpine AS agent
 WORKDIR $GOPATH/src/app
 COPY . .
 
-RUN go build -o cbdprotein-agent ./cli/pprotein-agent
+RUN go build -o cbdprotein-agent ./cli/cbdprotein-agent
 
 # --------------------------------------------------
 
