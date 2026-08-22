@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	EnvWebhookURL   = "PPROTEIN_SLACK_WEBHOOK_URL"
-	EnvGroupTimeout = "PPROTEIN_SLACK_GROUP_TIMEOUT"
+	EnvWebhookURL   = "CBDPROTEIN_SLACK_WEBHOOK_URL"
+	EnvGroupTimeout = "CBDPROTEIN_SLACK_GROUP_TIMEOUT"
 
 	StatusOk   = "ok"
 	StatusFail = "fail"

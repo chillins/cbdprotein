@@ -41,6 +41,6 @@ COPY mock/nginx.conf /etc/nginx/
 
 ENV DSN "root@unix(/var/run/mysqld/mysqld.sock)/"
 ENV REQUEST_HOST "127.0.0.1:80"
-ENV PPROTEIN_GIT_REPOSITORY "/opt/pprotein"
+ENV CBDPROTEIN_GIT_REPOSITORY "/opt/pprotein"
 
 ENTRYPOINT ["supervisord"]
