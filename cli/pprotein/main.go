@@ -11,6 +11,7 @@ import (
 	"github.com/kaz/pprotein/internal/extproc/alp"
 	"github.com/kaz/pprotein/internal/extproc/slp"
 	"github.com/kaz/pprotein/internal/memo"
+	"github.com/kaz/pprotein/internal/notify"
 	"github.com/kaz/pprotein/internal/pprof"
 	"github.com/kaz/pprotein/internal/storage"
 	"github.com/kaz/pprotein/view"
@@ -47,11 +48,24 @@ func start() error {
 	hub := event.NewHub()
 	hub.RegisterHandlers(api.Group("/event"))
 
+	notifier := notify.NewSlack()
+	hook := func(entry *collect.Entry) {
+		notifier.Report(notify.Result{
+			Type:     entry.Snapshot.Type,
+			Label:    entry.Snapshot.Label,
+			GroupId:  entry.Snapshot.GroupId,
+			Status:   string(entry.Status),
+			Message:  entry.Message,
+			Datetime: entry.Snapshot.Datetime,
+		})
+	}
+
 	pprofOpts := &collect.Options{
 		Type:     "pprof",
 		Ext:      "-pprof.pb.gz",
 		Store:    store,
 		EventHub: hub,
+		Hook:     hook,
 	}
 	if err := pprof.NewHandler(pprofOpts).Register(api.Group("/pprof")); err != nil {
 		return err
@@ -62,6 +76,7 @@ func start() error {
 		Ext:      "-httplog.log",
 		Store:    store,
 		EventHub: hub,
+		Hook:     hook,
 	}
 	alpHandler, err := alp.NewHandler(alpOpts, store)
 	if err != nil {
@@ -76,6 +91,7 @@ func start() error {
 		Ext:      "-slowlog.log",
 		Store:    store,
 		EventHub: hub,
+		Hook:     hook,
 	}
 	slpHandler, err := slp.NewHandler(slpOpts, store)
 	if err != nil {
@@ -90,12 +106,13 @@ func start() error {
 		Ext:      "-memo.log",
 		Store:    store,
 		EventHub: hub,
+		Hook:     hook,
 	}
 	if err := memo.NewHandler(memoOpts).Register(api.Group("/memo")); err != nil {
 		return err
 	}
 
-	grp, err := group.NewCollector(store, port)
+	grp, err := group.NewCollector(store, port, notifier)
 	if err != nil {
 		return err
 	}
