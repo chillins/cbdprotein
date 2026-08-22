@@ -6,6 +6,8 @@ upstream との差分:
 
 - **Slack 通知** — グループ収集が揃ったら要約1通、収集/解析の失敗はその場で1通
 - **`make build-linux`** — ISUCON サーバ向けの linux/amd64 クロスビルド
+- **`deliver-to-kit.yml`** — main へのマージで linux/amd64 をビルドし、`isucon-kit-v2` の
+  `bin/` を更新する PR を自動で出す
 - **公開系ワークフローの削除** — `publish-release.yml`（public Release にバイナリ）と
   `push-docker-image.yml`（public GHCR に image）、および `.goreleaser.yaml` を削除した。
   成果物は [chillins/isucon-kit-v2](https://github.com/chillins/isucon-kit-v2)（private）経由でのみ配る
@@ -50,8 +52,40 @@ make build-linux
 
 ## isucon-kit-v2 への配布
 
+main に PR がマージされると `.github/workflows/deliver-to-kit.yml` が走り、
+linux/amd64 をビルドして [chillins/isucon-kit-v2](https://github.com/chillins/isucon-kit-v2) に
+`bin/pprotein` / `bin/pprotein-agent` を更新する PR を出す。
+
+- ブランチは `deliver/pprotein` 固定。main が更新されるたび kit の main を土台に force-push で
+  作り直すので、**開いている PR は常に1本**（マージ待ちの間に追加のマージがあれば同じ PR が更新される）
+- バイナリに差分が無いマージ（ドキュメントのみなど）では PR を作らない
+- 由来は PR 内の `bin/pprotein.version` から追える
+- 手動で流したいときは Actions から `workflow_dispatch`
+
+### 必要な secret
+
+cbdprotein の Actions secret に `KIT_REPO_TOKEN` を登録する。`isucon-kit-v2` に対して
+**Contents: Read and write** / **Pull requests: Read and write** を持つ fine-grained PAT
+（`GITHUB_TOKEN` は他リポジトリに push できないため）。
+
+```sh
+gh secret set KIT_REPO_TOKEN --repo chillins/cbdprotein
+```
+
+### 受け入れ側（未対応）
+
+`isucon-kit-v2` の `Makefile` の `pprotein/install-*` は今も upstream `kaz/pprotein` の
+release を wget しており、`deploy.sh` も `bin/` を rsync していない。
+**この PR をマージしただけでは EC2 には反映されない。** kit 側の配線は別途:
+
+- `deploy.sh` に `bin/` の rsync（`isuconapp` と `isucondb1` / `isucondb2`）を追加
+- `Makefile` の `install ./pprotein ...` を `bin/` 参照に変更
+- Slack webhook 用の `pprotein.env` 生成と `/etc/pprotein.env` への配置
+
+### 手動でやる場合
+
 ```sh
 make clean && make build-linux
 cp dist/linux_amd64/pprotein dist/linux_amd64/pprotein-agent <isucon-kit-v2>/bin/
-# isucon-kit-v2 側で PR を出す。main に入ると CD が EC2 に rsync して再起動する
+# isucon-kit-v2 側で PR を出す
 ```

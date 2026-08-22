@@ -1,0 +1,130 @@
+name: Deliver to isucon-kit-v2
+
+# main に PR がマージされたら linux/amd64 をビルドし、
+# isucon-kit-v2 の bin/ を更新する PR を出す（開いている PR は上書き更新される）。
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - ".claude/**"
+      - ".github/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deliver-to-kit
+  cancel-in-progress: false
+
+env:
+  KIT_REPO: chillins/isucon-kit-v2
+  KIT_BRANCH: deliver/pprotein
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: view/package-lock.json
+
+      - name: Test
+        run: go test ./...
+
+      # dist/linux_amd64/{pprotein,pprotein-agent} が出る
+      - name: Build for linux/amd64
+        run: make build-linux
+
+      - name: Checkout isucon-kit-v2
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.KIT_REPO }}
+          token: ${{ secrets.KIT_REPO_TOKEN }}
+          path: kit
+          ref: main
+
+      - name: Stage binaries into kit
+        id: stage
+        working-directory: kit
+        run: |
+          set -euo pipefail
+
+          # 開いている PR を作り直す前提で、常に kit の main を土台にする
+          git switch -c "$KIT_BRANCH"
+
+          mkdir -p bin
+          install -m 0755 \
+            ../dist/linux_amd64/pprotein \
+            ../dist/linux_amd64/pprotein-agent \
+            bin/
+
+          # バイナリに差分が無ければ（ドキュメントのみのマージなど）ここで終了
+          git add -A bin
+          if git diff --cached --quiet -- bin; then
+            echo "バイナリに変更なし。PR は作成しない"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 由来を追えるようにコミット情報を残す
+          {
+            echo "source:  https://github.com/${{ github.repository }}"
+            echo "commit:  ${{ github.sha }}"
+            echo "subject: $(git -C .. log -1 --pretty=%s)"
+          } > bin/pprotein.version
+          git add bin/pprotein.version
+
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "chore: update pprotein binaries (${GITHUB_SHA:0:7})"
+
+          git push --force origin "HEAD:refs/heads/$KIT_BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update PR
+        if: steps.stage.outputs.changed == 'true'
+        working-directory: kit
+        env:
+          GH_TOKEN: ${{ secrets.KIT_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          sha7="${GITHUB_SHA:0:7}"
+          title="chore: update pprotein binaries ($sha7)"
+          repo_url="https://github.com/${{ github.repository }}"
+          run_url="$repo_url/actions/runs/${{ github.run_id }}"
+
+          {
+            echo "[\`$sha7\`]($repo_url/commit/${{ github.sha }}) のビルド結果（linux/amd64）を \`bin/\` に反映する。"
+            echo
+            echo "- $(git -C .. log -1 --pretty=%s)"
+            echo "- workflow: [${{ github.workflow }}]($run_url)"
+            echo
+            echo "> [!NOTE]"
+            echo "> 現状 \`Makefile\` の \`pprotein/install-*\` は upstream \`kaz/pprotein\` の release を wget しており、"
+            echo "> \`deploy.sh\` も \`bin/\` を rsync していない。この PR をマージしただけでは EC2 には反映されない"
+            echo "> （受け入れ側の配線は別途対応）。"
+            echo
+            echo "このブランチは cbdprotein の main が更新されるたび force-push で作り直される。"
+          } > "$RUNNER_TEMP/pr-body.md"
+
+          existing=$(gh pr list --repo "$KIT_REPO" --head "$KIT_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --repo "$KIT_REPO" --title "$title" --body-file "$RUNNER_TEMP/pr-body.md"
+            gh pr view "$existing" --repo "$KIT_REPO" --json url --jq '"更新: " + .url'
+          else
+            gh pr create --repo "$KIT_REPO" --base main --head "$KIT_BRANCH" \
+              --title "$title" --body-file "$RUNNER_TEMP/pr-body.md"
+          fi
