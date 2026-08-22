@@ -6,7 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/kaz/pprotein/internal/collect"
+	"github.com/chillins/cbdprotein/internal/collect"
 )
 
 type (

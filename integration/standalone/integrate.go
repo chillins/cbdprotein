@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kaz/pprotein/integration"
+	"github.com/chillins/cbdprotein/integration"
 )
 
 func Integrate(addr string) {

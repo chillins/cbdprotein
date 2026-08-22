@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/kaz/pprotein/internal/collect"
+	"github.com/chillins/cbdprotein/internal/collect"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 )

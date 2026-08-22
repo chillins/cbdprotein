@@ -4,10 +4,10 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/kaz/pprotein/internal/collect"
-	"github.com/kaz/pprotein/internal/extproc"
-	"github.com/kaz/pprotein/internal/persistent"
-	"github.com/kaz/pprotein/internal/storage"
+	"github.com/chillins/cbdprotein/internal/collect"
+	"github.com/chillins/cbdprotein/internal/extproc"
+	"github.com/chillins/cbdprotein/internal/persistent"
+	"github.com/chillins/cbdprotein/internal/storage"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 )
