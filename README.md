@@ -25,7 +25,7 @@ upstream との差分:
 **webhook URL はリポジトリにコミットしない。** `isucon-kit-v2` の GitHub Secrets から CD が
 `cbdprotein.env` を生成し、`/etc/cbdprotein.env` に rsync して systemd の `EnvironmentFile` で読ませる。
 
-`pprotein-agent`（`cli/pprotein-agent`）は upstream のまま `PORT` / `PPROTEIN_HTTPLOG` /
+`cbdprotein-agent`（`cli/pprotein-agent`）は upstream のまま `PORT` / `PPROTEIN_HTTPLOG` /
 `PPROTEIN_SLOWLOG` / `PPROTEIN_GIT_REPOSITORY` を読む。
 
 ## 通知の挙動
@@ -53,7 +53,7 @@ make build-linux
 
 main に PR がマージされると `.github/workflows/deliver-to-kit.yml` が走り、
 linux/amd64 をビルドして [chillins/isucon-kit-v2](https://github.com/chillins/isucon-kit-v2) に
-`bin/cbdprotein` / `bin/pprotein-agent` を更新する PR を出す。
+`bin/cbdprotein` / `bin/cbdprotein-agent` を更新する PR を出す。
 
 - ブランチは `deliver/cbdprotein` 固定。main が更新されるたび kit の main を土台に force-push で
   作り直すので、**開いている PR は常に1本**（マージ待ちの間に追加のマージがあれば同じ PR が更新される）
@@ -79,13 +79,13 @@ release を wget しており、`deploy.sh` も `bin/` を rsync していない
 
 - `deploy.sh` に `bin/` の rsync（`isuconapp` と `isucondb1` / `isucondb2`）を追加
 - `Makefile` の `install ./cbdprotein ...` を `bin/` 参照に変更
-- systemd ユニットを `cbdprotein.service` にし、実行ファイルを `/usr/local/bin/cbdprotein` に
+- systemd ユニットを `cbdprotein.service` / `cbdprotein-agent.service` にし、実行ファイルを `/usr/local/bin/cbdprotein` / `/usr/local/bin/cbdprotein-agent` に
 - Slack webhook 用の `cbdprotein.env` 生成と `/etc/cbdprotein.env` への配置
 
 ### 手動でやる場合
 
 ```sh
 make clean && make build-linux
-cp dist/linux_amd64/cbdprotein dist/linux_amd64/pprotein-agent <isucon-kit-v2>/bin/
+cp dist/linux_amd64/cbdprotein dist/linux_amd64/cbdprotein-agent <isucon-kit-v2>/bin/
 # isucon-kit-v2 側で PR を出す
 ```

@@ -4,6 +4,7 @@ mock.Dockerfile
 compose.yaml
 
 cbdprotein
+cbdprotein-agent
 data
 
 view/node_modules
