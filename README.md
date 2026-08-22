@@ -19,14 +19,14 @@ upstream との差分:
 | 変数 | 必須 | 既定 | 用途 |
 |---|---|---|---|
 | `PORT` | | `9000` | listen ポート |
-| `PPROTEIN_SLACK_WEBHOOK_URL` | | — | Incoming Webhook URL。**未設定なら通知機能ごと無効** |
-| `PPROTEIN_SLACK_GROUP_TIMEOUT` | | `5m` | グループの全ターゲットが揃うのを待つ上限 |
+| `CBDPROTEIN_SLACK_WEBHOOK_URL` | | — | Incoming Webhook URL。**未設定なら通知機能ごと無効** |
+| `CBDPROTEIN_SLACK_GROUP_TIMEOUT` | | `5m` | グループの全ターゲットが揃うのを待つ上限 |
 
 **webhook URL はリポジトリにコミットしない。** `isucon-kit-v2` の GitHub Secrets から CD が
 `cbdprotein.env` を生成し、`/etc/cbdprotein.env` に rsync して systemd の `EnvironmentFile` で読ませる。
 
-`cbdprotein-agent`（`cli/cbdprotein-agent`）は upstream のまま `PORT` / `PPROTEIN_HTTPLOG` /
-`PPROTEIN_SLOWLOG` / `PPROTEIN_GIT_REPOSITORY` を読む。
+`cbdprotein-agent`（`cli/cbdprotein-agent`）は `PORT` / `CBDPROTEIN_HTTPLOG` /
+`CBDPROTEIN_SLOWLOG` / `CBDPROTEIN_GIT_REPOSITORY` を読む。
 
 ## 通知の挙動
 

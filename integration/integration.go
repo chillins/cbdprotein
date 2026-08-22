@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	httplogPath       = getEnvOrDefault("PPROTEIN_HTTPLOG", "/var/log/nginx/access.log")
-	slowlogPath       = getEnvOrDefault("PPROTEIN_SLOWLOG", "/var/log/mysql/mysql-slow.log")
-	gitRepositoryPath = getEnvOrDefault("PPROTEIN_GIT_REPOSITORY", ".")
+	httplogPath       = getEnvOrDefault("CBDPROTEIN_HTTPLOG", "/var/log/nginx/access.log")
+	slowlogPath       = getEnvOrDefault("CBDPROTEIN_SLOWLOG", "/var/log/mysql/mysql-slow.log")
+	gitRepositoryPath = getEnvOrDefault("CBDPROTEIN_GIT_REPOSITORY", ".")
 )
 
 func NewDebugHandler() http.Handler {

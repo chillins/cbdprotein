@@ -33,7 +33,7 @@ type Dict = { [key: string]: string };
 export default defineComponent({
   data() {
     return {
-      title: "pprotein ⚙",
+      title: "cbdprotein ⚙",
     };
   },
   watch: {
