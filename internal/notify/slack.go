@@ -17,12 +17,12 @@ import (
 
 const (
 	EnvWebhookURL   = "PPROTEIN_SLACK_WEBHOOK_URL"
-	EnvBaseURL      = "PPROTEIN_BASE_URL"
 	EnvGroupTimeout = "PPROTEIN_SLACK_GROUP_TIMEOUT"
 
 	StatusOk   = "ok"
 	StatusFail = "fail"
 
+	defaultBaseURL      = "http://localhost:9000"
 	defaultGroupTimeout = 5 * time.Minute
 	postTimeout         = 5 * time.Second
 	messageLimit        = 300
@@ -87,7 +87,7 @@ func NewSlack() *Slack {
 
 	s := &Slack{
 		webhookURL: webhookURL,
-		baseURL:    strings.TrimSuffix(os.Getenv(EnvBaseURL), "/"),
+		baseURL:    defaultBaseURL,
 		timeout:    timeout,
 
 		groups: map[string]*groupState{},
@@ -193,7 +193,7 @@ func (s *Slack) formatGroup(groupId string, st *groupState, timedOut bool) strin
 	}
 
 	b := &strings.Builder{}
-	fmt.Fprintf(b, "%s pprotein %s  group: %s\n", icon, head, groupId)
+	fmt.Fprintf(b, "%s cbdprotein %s  group: %s\n", icon, head, groupId)
 
 	for _, target := range st.expected {
 		r, ok := st.results[target]
@@ -216,7 +216,7 @@ func (s *Slack) formatGroup(groupId string, st *groupState, timedOut bool) strin
 
 func (s *Slack) formatFailure(r Result) string {
 	b := &strings.Builder{}
-	fmt.Fprintf(b, "❌ pprotein 収集失敗  %s / %s", r.Type, r.Label)
+	fmt.Fprintf(b, "❌ cbdprotein 収集失敗  %s / %s", r.Type, r.Label)
 	if !r.Datetime.IsZero() {
 		fmt.Fprintf(b, "  (%s)", r.Datetime.Format("15:04:05"))
 	}
@@ -233,7 +233,7 @@ func (s *Slack) formatFailure(r Result) string {
 }
 
 func (s *Slack) groupLink(groupId string) string {
-	if s.baseURL == "" || groupId == "" {
+	if groupId == "" {
 		return ""
 	}
 	// The view uses hash history, so entries live under /#/group/<gid>/.

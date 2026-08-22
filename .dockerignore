@@ -3,7 +3,7 @@ mock.Dockerfile
 
 compose.yaml
 
-pprotein
+cbdprotein
 data
 
 view/node_modules

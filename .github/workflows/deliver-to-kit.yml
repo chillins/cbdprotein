@@ -19,7 +19,7 @@ concurrency:
 
 env:
   KIT_REPO: chillins/isucon-kit-v2
-  KIT_BRANCH: deliver/pprotein
+  KIT_BRANCH: deliver/cbdprotein
 
 jobs:
   deliver:
@@ -47,7 +47,7 @@ jobs:
       - name: Test
         run: go test ./...
 
-      # dist/linux_amd64/{pprotein,pprotein-agent} が出る
+      # dist/linux_amd64/{cbdprotein,pprotein-agent} が出る
       - name: Build for linux/amd64
         run: make build-linux
 
@@ -70,7 +70,7 @@ jobs:
 
           mkdir -p bin
           install -m 0755 \
-            ../dist/linux_amd64/pprotein \
+            ../dist/linux_amd64/cbdprotein \
             ../dist/linux_amd64/pprotein-agent \
             bin/
 
@@ -87,12 +87,12 @@ jobs:
             echo "source:  https://github.com/${{ github.repository }}"
             echo "commit:  ${{ github.sha }}"
             echo "subject: $(git -C .. log -1 --pretty=%s)"
-          } > bin/pprotein.version
-          git add bin/pprotein.version
+          } > bin/cbdprotein.version
+          git add bin/cbdprotein.version
 
           git -c user.name='github-actions[bot]' \
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -m "chore: update pprotein binaries (${GITHUB_SHA:0:7})"
+              commit -m "chore: update cbdprotein binaries (${GITHUB_SHA:0:7})"
 
           git push --force origin "HEAD:refs/heads/$KIT_BRANCH"
           echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -106,7 +106,7 @@ jobs:
           set -euo pipefail
 
           sha7="${GITHUB_SHA:0:7}"
-          title="chore: update pprotein binaries ($sha7)"
+          title="chore: update cbdprotein binaries ($sha7)"
           repo_url="https://github.com/${{ github.repository }}"
           run_url="$repo_url/actions/runs/${{ github.run_id }}"
 
@@ -117,7 +117,7 @@ jobs:
             echo "- workflow: [${{ github.workflow }}]($run_url)"
             echo
             echo "> [!NOTE]"
-            echo "> 現状 \`Makefile\` の \`pprotein/install-*\` は upstream \`kaz/pprotein\` の release を wget しており、"
+            echo "> 現状 \`Makefile\` の \`cbdprotein/install-*\` は upstream \`kaz/pprotein\` の release を wget しており、"
             echo "> \`deploy.sh\` も \`bin/\` を rsync していない。この PR をマージしただけでは EC2 には反映されない"
             echo "> （受け入れ側の配線は別途対応）。"
             echo
