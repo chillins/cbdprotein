@@ -40,6 +40,10 @@ jobs:
           cache: npm
           cache-dependency-path: view/package-lock.json
 
+      # view/embed.go が dist/* を embed するため、テスト/ビルドの前に必要
+      - name: Build frontend
+        run: make view/dist
+
       - name: Test
         run: go test ./...
 
