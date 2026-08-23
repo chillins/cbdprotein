@@ -2,6 +2,7 @@ package notify
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -26,8 +28,12 @@ const (
 	defaultGroupTimeout = 5 * time.Minute
 	postTimeout         = 5 * time.Second
 	messageLimit        = 300
-	reportPrompt        = "*:next: :action: ベンチ結果のログファイルを作成したらagentで`/analyze`を実行しよう！*"
 )
+
+//go:embed messages.tmpl
+var messagesTmpl string
+
+var slackTmpl = template.Must(template.New("slack").Parse(messagesTmpl))
 
 type (
 	// Target identifies one collection unit within a group.
@@ -171,77 +177,93 @@ func (s *Slack) flush(groupId string, timedOut bool) {
 	s.send(text)
 }
 
+type (
+	groupMsg struct {
+		GroupId  string
+		ViewURL  string
+		Failed   int
+		Missing  int
+		TimedOut bool
+		Targets  []targetMsg
+	}
+
+	targetMsg struct {
+		Type    string
+		Label   string
+		Status  string
+		Message string
+		OK      bool
+		Missing bool
+	}
+
+	failureMsg struct {
+		Type    string
+		Label   string
+		GroupId string
+		Message string
+		Time    string
+		ViewURL string
+	}
+)
+
 func (s *Slack) formatGroup(groupId string, st *groupState, timedOut bool) string {
-	failed, missing := 0, 0
+	msg := groupMsg{
+		GroupId:  groupId,
+		ViewURL:  s.viewURL(groupId),
+		TimedOut: timedOut,
+		Targets:  make([]targetMsg, 0, len(st.expected)),
+	}
+
 	for _, target := range st.expected {
+		line := targetMsg{Type: target.Type, Label: target.Label}
 		r, ok := st.results[target]
 		switch {
 		case !ok:
-			missing++
+			msg.Missing++
+			line.Missing = true
 		case r.Status != StatusOk:
-			failed++
-		}
-	}
-
-	head := "*収集完了*"
-	icon := "✅"
-	if failed > 0 || missing > 0 {
-		head = fmt.Sprintf("収集完了 (失敗 %d / 未着 %d)", failed, missing)
-		icon = "⚠️"
-	}
-	if timedOut {
-		head += " ※タイムアウト"
-	}
-
-	b := &strings.Builder{}
-	fmt.Fprintf(b, "%s cbdprotein %s  group: %s\n", icon, head, groupId)
-
-	for _, target := range st.expected {
-		r, ok := st.results[target]
-		switch {
-		case !ok:
-			fmt.Fprintf(b, "• %s / %s — 未着\n", target.Type, target.Label)
-		case r.Status == StatusOk:
-			fmt.Fprintf(b, "• %s / %s — ok\n", target.Type, target.Label)
+			msg.Failed++
+			line.Status = r.Status
+			line.Message = oneline(r.Message)
 		default:
-			fmt.Fprintf(b, "• %s / %s — %s: %s\n", target.Type, target.Label, r.Status, oneline(r.Message))
+			line.OK = true
+			line.Status = r.Status
 		}
+		msg.Targets = append(msg.Targets, line)
 	}
 
-	if link := s.groupLink(groupId); link != "" {
-		b.WriteString(link)
-		b.WriteByte('\n')
-	}
-	b.WriteString(reportPrompt)
-
-	return strings.TrimRight(b.String(), "\n")
+	return renderTmpl("group", msg)
 }
 
 func (s *Slack) formatFailure(r Result) string {
-	b := &strings.Builder{}
-	fmt.Fprintf(b, "❌ cbdprotein 収集失敗  %s / %s", r.Type, r.Label)
+	msg := failureMsg{
+		Type:    r.Type,
+		Label:   r.Label,
+		GroupId: r.GroupId,
+		Message: oneline(r.Message),
+		ViewURL: s.viewURL(r.GroupId),
+	}
 	if !r.Datetime.IsZero() {
-		fmt.Fprintf(b, "  (%s)", r.Datetime.Format("15:04:05"))
+		msg.Time = r.Datetime.Format("15:04:05")
 	}
-	if r.GroupId != "" {
-		fmt.Fprintf(b, "\ngroup: %s", r.GroupId)
-	}
-	fmt.Fprintf(b, "\n%s", oneline(r.Message))
-
-	if link := s.groupLink(r.GroupId); link != "" {
-		fmt.Fprintf(b, "\n%s", link)
-	}
-	fmt.Fprintf(b, "\n%s", reportPrompt)
-
-	return b.String()
+	return renderTmpl("failure", msg)
 }
 
-func (s *Slack) groupLink(groupId string) string {
-	if groupId == "" {
+func renderTmpl(name string, data any) string {
+	b := &strings.Builder{}
+	if err := slackTmpl.ExecuteTemplate(b, name, data); err != nil {
+		log.Printf("[notify] failed to render %s template: %v", name, err)
+		return ""
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (s *Slack) viewURL(groupId string) string {
+	if s.baseURL == "" || groupId == "" {
 		return ""
 	}
 	// The view uses hash history, so entries live under /#/group/<gid>/.
-	return fmt.Sprintf("<%s/#/group/%s/index/|結果を見る (`ssh -L 9000:localhost:9000 isuconapp`を実行してね)>", s.baseURL, url.PathEscape(groupId))
+	return fmt.Sprintf("%s/#/group/%s/index/", s.baseURL, url.PathEscape(groupId))
 }
 
 func (s *Slack) send(text string) {

@@ -33,6 +33,7 @@ upstream との差分:
 - **グループ収集** (`GET /api/group/collect`) … `targets.json` の全ターゲットが終わった時点で要約1通。
   1つでも失敗/未着があれば ⚠️ になる
 - **失敗** … グループかどうかに関わらず、その場で1通
+- 文言は [`internal/notify/messages.tmpl`](internal/notify/messages.tmpl) 。ビルドに embed されるので、直したらバイナリを作り直す
 - **単発 collect の成功** … 通知しない（`POST /api/pprof` などを直接叩いたケース）
 - **起動時の再処理** … 通知しない。ここを通知すると再起動のたびに過去スナップショット全件が流れる
 

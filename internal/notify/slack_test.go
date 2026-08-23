@@ -64,7 +64,7 @@ func TestGroupSummarySentOnceWhenComplete(t *testing.T) {
 	s.Report(Result{Type: "slowlog", Label: "db1", GroupId: "grp", Status: StatusOk, Message: "Ready"})
 
 	text := recvText(t, ch)
-	for _, want := range []string{"✅", "group: grp", "pprof / app — ok", "slowlog / db1 — ok", "/#/group/grp/index/", reportPrompt} {
+	for _, want := range []string{"✅", "group: grp", "pprof / app — ok", "slowlog / db1 — ok", "/#/group/grp/index/", "/analyze"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("summary missing %q:\n%v", want, text)
 		}
@@ -101,7 +101,7 @@ func TestFailureNotifiedImmediatelyAndInSummary(t *testing.T) {
 	if !strings.Contains(failure, "slowlog / db1") || !strings.Contains(failure, "exit status 1") {
 		t.Errorf("unexpected failure notification:\n%v", failure)
 	}
-	if !strings.Contains(failure, reportPrompt) {
+	if !strings.Contains(failure, "/analyze") {
 		t.Errorf("failure missing report prompt:\n%v", failure)
 	}
 

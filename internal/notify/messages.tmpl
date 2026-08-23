@@ -1,0 +1,32 @@
+{{/* Slack Incoming Webhook の text。文言の修正はこのファイルだけ。
+
+group:   GroupId, ViewURL, Failed, Missing, TimedOut
+         Targets: Type, Label, Status, Message, OK, Missing
+failure: Type, Label, GroupId, Message, Time, ViewURL
+*/}}
+
+{{define "footer" -}}
+*:next: :action: ベンチ結果のログファイルを作成したらagentで`/analyze`を実行しよう！*
+{{- end}}
+
+{{define "result_link" -}}
+{{if .ViewURL}}<{{.ViewURL}}|結果を見る> (`ssh -L 9000:localhost:9000 isuconapp`を実行してね){{end}}
+{{- end}}
+
+{{define "group" -}}
+{{if or .Failed .Missing}}⚠️{{else}}✅{{end}} cbdprotein {{if or .Failed .Missing}}収集完了 (失敗 {{.Failed}} / 未着 {{.Missing}}){{else}}*収集完了*{{end}}{{if .TimedOut}} ※タイムアウト{{end}}  group: {{.GroupId}}
+{{range .Targets -}}
+• {{.Type}} / {{.Label}} — {{if .Missing}}未着{{else if .OK}}ok{{else}}{{.Status}}: {{.Message}}{{end}}
+{{end -}}
+{{if .ViewURL}}{{template "result_link" .}}
+{{end -}}
+{{template "footer" .}}
+{{- end}}
+
+{{define "failure" -}}
+❌ cbdprotein 収集失敗  {{.Type}} / {{.Label}}{{if .Time}}  ({{.Time}}){{end}}{{if .GroupId}}
+group: {{.GroupId}}{{end}}
+{{.Message}}{{if .ViewURL}}
+{{template "result_link" .}}{{end}}
+{{template "footer" .}}
+{{- end}}
