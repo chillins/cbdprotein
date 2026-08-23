@@ -64,7 +64,7 @@ func TestGroupSummarySentOnceWhenComplete(t *testing.T) {
 	s.Report(Result{Type: "slowlog", Label: "db1", GroupId: "grp", Status: StatusOk, Message: "Ready"})
 
 	text := recvText(t, ch)
-	for _, want := range []string{"✅", "group: grp", "pprof / app — ok", "slowlog / db1 — ok", "/#/group/grp/index/"} {
+	for _, want := range []string{"✅", "group: grp", "pprof / app — ok", "slowlog / db1 — ok", "/#/group/grp/index/", reportPrompt} {
 		if !strings.Contains(text, want) {
 			t.Errorf("summary missing %q:\n%v", want, text)
 		}
@@ -100,6 +100,9 @@ func TestFailureNotifiedImmediatelyAndInSummary(t *testing.T) {
 	}
 	if !strings.Contains(failure, "slowlog / db1") || !strings.Contains(failure, "exit status 1") {
 		t.Errorf("unexpected failure notification:\n%v", failure)
+	}
+	if !strings.Contains(failure, reportPrompt) {
+		t.Errorf("failure missing report prompt:\n%v", failure)
 	}
 
 	if summary == "" {
@@ -182,3 +185,30 @@ func TestOnelineTruncatesWithoutSplittingRunes(t *testing.T) {
 		t.Errorf("expected an ellipsis suffix: %v", msg)
 	}
 }
+
+func TestNewSlackBaseURL(t *testing.T) {
+	t.Setenv(EnvWebhookURL, "https://example.com/webhook")
+
+	t.Run("default", func(t *testing.T) {
+		t.Setenv(EnvBaseURL, "")
+		s := NewSlack()
+		if s == nil {
+			t.Fatal("expected Slack when webhook is set")
+		}
+		if s.baseURL != defaultBaseURL {
+			t.Errorf("baseURL = %q, want %q", s.baseURL, defaultBaseURL)
+		}
+	})
+
+	t.Run("override strips trailing slash", func(t *testing.T) {
+		t.Setenv(EnvBaseURL, "http://10.0.1.5:9000/")
+		s := NewSlack()
+		if s == nil {
+			t.Fatal("expected Slack when webhook is set")
+		}
+		if want := "http://10.0.1.5:9000"; s.baseURL != want {
+			t.Errorf("baseURL = %q, want %q", s.baseURL, want)
+		}
+	})
+}
+
