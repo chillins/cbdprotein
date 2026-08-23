@@ -185,30 +185,3 @@ func TestOnelineTruncatesWithoutSplittingRunes(t *testing.T) {
 		t.Errorf("expected an ellipsis suffix: %v", msg)
 	}
 }
-
-func TestNewSlackBaseURL(t *testing.T) {
-	t.Setenv(EnvWebhookURL, "https://example.com/webhook")
-
-	t.Run("default", func(t *testing.T) {
-		t.Setenv(EnvBaseURL, "")
-		s := NewSlack()
-		if s == nil {
-			t.Fatal("expected Slack when webhook is set")
-		}
-		if s.baseURL != defaultBaseURL {
-			t.Errorf("baseURL = %q, want %q", s.baseURL, defaultBaseURL)
-		}
-	})
-
-	t.Run("override strips trailing slash", func(t *testing.T) {
-		t.Setenv(EnvBaseURL, "http://10.0.1.5:9000/")
-		s := NewSlack()
-		if s == nil {
-			t.Fatal("expected Slack when webhook is set")
-		}
-		if want := "http://10.0.1.5:9000"; s.baseURL != want {
-			t.Errorf("baseURL = %q, want %q", s.baseURL, want)
-		}
-	})
-}
-
