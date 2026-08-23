@@ -26,6 +26,7 @@ const (
 	defaultGroupTimeout = 5 * time.Minute
 	postTimeout         = 5 * time.Second
 	messageLimit        = 300
+	reportPrompt        = "*:index_pointing_at_the_viewer:agentで`/report-cbdprotein`を実行しよう！*"
 )
 
 type (
@@ -182,7 +183,7 @@ func (s *Slack) formatGroup(groupId string, st *groupState, timedOut bool) strin
 		}
 	}
 
-	head := "収集完了"
+	head := "*収集完了*"
 	icon := "✅"
 	if failed > 0 || missing > 0 {
 		head = fmt.Sprintf("収集完了 (失敗 %d / 未着 %d)", failed, missing)
@@ -209,7 +210,9 @@ func (s *Slack) formatGroup(groupId string, st *groupState, timedOut bool) strin
 
 	if link := s.groupLink(groupId); link != "" {
 		b.WriteString(link)
+		b.WriteByte('\n')
 	}
+	b.WriteString(reportPrompt)
 
 	return strings.TrimRight(b.String(), "\n")
 }
@@ -228,6 +231,7 @@ func (s *Slack) formatFailure(r Result) string {
 	if link := s.groupLink(r.GroupId); link != "" {
 		fmt.Fprintf(b, "\n%s", link)
 	}
+	fmt.Fprintf(b, "\n%s", reportPrompt)
 
 	return b.String()
 }
