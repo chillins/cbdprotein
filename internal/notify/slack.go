@@ -26,7 +26,7 @@ const (
 	defaultGroupTimeout = 5 * time.Minute
 	postTimeout         = 5 * time.Second
 	messageLimit        = 300
-	reportPrompt        = "*:index_pointing_at_the_viewer:agentで`/report-cbdprotein`を実行しよう！*"
+	reportPrompt        = "*:next: :action: ベンチ結果のログファイルを作成したらagentで`/analyze`を実行しよう！*"
 )
 
 type (
