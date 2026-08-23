@@ -241,7 +241,7 @@ func (s *Slack) groupLink(groupId string) string {
 		return ""
 	}
 	// The view uses hash history, so entries live under /#/group/<gid>/.
-	return fmt.Sprintf("<%s/#/group/%s/index/|結果を見る>", s.baseURL, url.PathEscape(groupId))
+	return fmt.Sprintf("<%s/#/group/%s/index/|結果を見る (`ssh -L 9000:localhost:9000 isuconapp`を実行してね)>", s.baseURL, url.PathEscape(groupId))
 }
 
 func (s *Slack) send(text string) {
